@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">TP2</string>
+    <string name="bottom_bar_alarma">Alarma</string>
+    <string name="bottom_bar_grafico">Grafico</string>
+    <string name="button_search_bluetooth">Buscar Dispositivos</string>
+    <string name="button_connect_bluetooth">Conectarse</string>
+    <string name="button_alarm_activate">Activar Alarma</string>
+    <string name="button_alarm_deactivate">Desactivar Alarma></string>
+    <string name="button_disconnect_bluetooth">Desconectar Dispositivo</string>
+    <string name="alarm_text">Control de Alarma</string>
+</resources>

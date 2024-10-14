@@ -1,0 +1,129 @@
+{
+  "version": 1,
+  "author": "Anonymous maker",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-breadboard-half",
+      "id": "bb1",
+      "top": 92.1,
+      "left": 281.7,
+      "rotate": 90,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-breadboard-half",
+      "id": "bb2",
+      "top": 92.1,
+      "left": 531.3,
+      "rotate": 90,
+      "attrs": {}
+    },
+    { "type": "wokwi-arduino-uno", "id": "uno", "top": 39, "left": -115.8, "attrs": {} },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn1",
+      "top": 61,
+      "left": 681.8,
+      "rotate": 180,
+      "attrs": { "color": "green", "bounce": "0" }
+    },
+    {
+      "type": "wokwi-mpu6050",
+      "id": "imu1",
+      "top": 70.18,
+      "left": 482.92,
+      "rotate": 270,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "bz1",
+      "top": 294.9,
+      "left": 753.3,
+      "rotate": 90,
+      "attrs": { "volume": "0.1" }
+    },
+    {
+      "type": "wokwi-rgb-led",
+      "id": "rgb1",
+      "top": 177.6,
+      "left": 735.3,
+      "rotate": 90,
+      "attrs": { "common": "cathode" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": 195.95,
+      "left": 652.8,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "top": 215.15,
+      "left": 652.8,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r3",
+      "top": 224.75,
+      "left": 652.8,
+      "attrs": { "value": "220" }
+    },
+    { "type": "wokwi-gnd", "id": "gnd1", "top": 432, "left": 594.6, "attrs": {} },
+    {
+      "type": "wokwi-vcc",
+      "id": "vcc1",
+      "top": 431.04,
+      "left": 355.4,
+      "rotate": 180,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [ "uno:GND.2", "bb1:bn.25", "black", [ "v153.5", "h13.5" ] ],
+    [ "bb1:2t.e", "bb1:bp.1", "red", [ "h0" ] ],
+    [ "bb1:3t.d", "bb1:bn.2", "black", [ "h0" ] ],
+    [ "bb1:4t.c", "uno:A5", "gold", [ "h-307.2", "v163.2", "h-28.8" ] ],
+    [ "uno:A4", "bb1:5t.b", "gold", [ "v28.7", "h52.2", "v-163.2" ] ],
+    [ "bb1:bn.1", "bb2:bn.1", "black", [ "v-65.6", "h250.9" ] ],
+    [ "bb2:bn.2", "bb2:3b.j", "black", [ "h0" ] ],
+    [ "bb2:5b.i", "uno:2", "#8f4814", [ "h0", "v-105.6", "h-537.6" ] ],
+    [ "bb2:29t.e", "bb2:bn.24", "black", [ "h0" ] ],
+    [ "uno:11", "bb2:30t.d", "violet", [ "v-67.2", "h807", "v412.8", "h-115.2" ] ],
+    [ "bb2:17t.e", "bb2:bn.14", "black", [ "h0" ] ],
+    [ "uno:8", "bb2:16b.j", "green", [ "v-76.8", "h787.6", "v220.8", "h-201.6" ] ],
+    [ "bb2:18b.j", "uno:12", "green", [ "h-9.6", "v28.8", "h220.8", "v-288", "h-835.2" ] ],
+    [ "uno:13", "bb2:19b.j", "green", [ "v-96", "h854.8", "v307.2", "h-220.8" ] ],
+    [ "btn1:1.l", "bb2:5t.a", "", [ "$bb" ] ],
+    [ "btn1:2.l", "bb2:3t.a", "", [ "$bb" ] ],
+    [ "btn1:1.r", "bb2:5b.f", "", [ "$bb" ] ],
+    [ "btn1:2.r", "bb2:3b.f", "", [ "$bb" ] ],
+    [ "imu1:INT", "bb1:9t.a", "", [ "$bb" ] ],
+    [ "imu1:AD0", "bb1:8t.a", "", [ "$bb" ] ],
+    [ "imu1:XCL", "bb1:7t.a", "", [ "$bb" ] ],
+    [ "imu1:XDA", "bb1:6t.a", "", [ "$bb" ] ],
+    [ "imu1:SDA", "bb1:5t.a", "", [ "$bb" ] ],
+    [ "imu1:SCL", "bb1:4t.a", "", [ "$bb" ] ],
+    [ "imu1:GND", "bb1:3t.a", "", [ "$bb" ] ],
+    [ "imu1:VCC", "bb1:2t.a", "", [ "$bb" ] ],
+    [ "bz1:1", "bb2:29t.a", "", [ "$bb" ] ],
+    [ "bz1:2", "bb2:30t.a", "", [ "$bb" ] ],
+    [ "rgb1:R", "bb2:16t.a", "", [ "$bb" ] ],
+    [ "rgb1:COM", "bb2:17t.b", "", [ "$bb" ] ],
+    [ "rgb1:G", "bb2:18t.a", "", [ "$bb" ] ],
+    [ "rgb1:B", "bb2:19t.a", "", [ "$bb" ] ],
+    [ "r1:1", "bb2:16b.i", "", [ "$bb" ] ],
+    [ "r1:2", "bb2:16t.e", "", [ "$bb" ] ],
+    [ "r2:1", "bb2:18b.i", "", [ "$bb" ] ],
+    [ "r2:2", "bb2:18t.e", "", [ "$bb" ] ],
+    [ "r3:1", "bb2:19b.i", "", [ "$bb" ] ],
+    [ "r3:2", "bb2:19t.e", "", [ "$bb" ] ],
+    [ "vcc1:VCC", "bb1:bp.25", "red", [ "v-96" ] ],
+    [ "gnd1:GND", "bb2:bn.25", "black", [ "v0" ] ]
+  ],
+  "dependencies": {}
+}
