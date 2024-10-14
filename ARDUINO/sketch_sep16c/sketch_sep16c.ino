@@ -19,6 +19,7 @@ void verificar_estado_bluetooth();
 // Libreria acelerometro
 #include <MPU6050.h>
 #include "pitches.h"
+#include <SoftwareSerial.h>
 
 // ------------------------------------------------
 // Etiquetas
@@ -89,6 +90,12 @@ void log_float(double val)
 #define PIN_D_ACTUADOR_LED_R 8
 #define PIN_D_ACTUADOR_LED_G 12
 #define PIN_D_ACTUADOR_LED_B 13
+
+// ------------------------------------------------
+// Pines de bluetooth
+// ------------------------------------------------
+#define PIN_RX_BLUETOOTH 6
+#define PIN_TX_BLUETOOTH 7
 
 // ------------------------------------------------
 // Estados del embebido
@@ -181,9 +188,12 @@ unsigned long tiempo_inicio_nota;
 bool alerta_sonando;
 bool verificar_caida;
 
+SoftwareSerial bluetooth(PIN_TX_BLUETOOTH,PIN_RX_BLUETOOTH);
+
 void start()
 {
-    Serial.begin(9600);
+    Serial.begin(57600);
+    bluetooth.begin(9600);
 
     // Setup actuadores
     actuador_led.pin_r = PIN_D_ACTUADOR_LED_R;
@@ -213,11 +223,11 @@ void start()
 
     alerta_sonando = false;
     nota_actual = 0;
+    evento = EVENTO_VACIO;
 }
 
 void fsm()
 {
-    // log(estado_actual);
     get_events();
     switch (estado_actual)
     {
@@ -401,8 +411,8 @@ void verificar_estado_sensor_boton()
 }
 
 void verificar_estado_bluetooth() {
-    if(Serial.available() > 0) {
-        char c = Serial.read();
+    if(bluetooth.available() > 0) {
+        char c = bluetooth.read();
         if(c == 'a') {
             evento = EVENTO_BLUETOOTH;
         }
@@ -441,7 +451,6 @@ void sonar_alerta()
 
         if (!alerta_sonando)
         {
-            noTone(actuador_buzzer.pin);
             tone(actuador_buzzer.pin, melodia[nota_actual], duracion); // Inicia la nueva nota con duraciÃ³n
             tiempo_inicio_nota = ahora;                                // Almacena el tiempo de inicio de la nota
             alerta_sonando = true;                                     // Indica que una nota estÃ¡ en reproducciÃ³n
