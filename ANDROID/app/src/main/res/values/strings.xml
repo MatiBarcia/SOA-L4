@@ -8,4 +8,5 @@
     <string name="button_alarm_deactivate">Desactivar Alarma></string>
     <string name="button_disconnect_bluetooth">Desconectar Dispositivo</string>
     <string name="alarm_text">Control de Alarma</string>
+    <string name="shake_activity_text">Texto de ejemplo</string>
 </resources>
