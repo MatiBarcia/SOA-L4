@@ -76,6 +76,7 @@ void log_float(double val)
 #define TMP_DELAY_EVENTOS 50
 #define TMP_DELAY_BOTON_MILI 50
 #define TMP_TIMEOUT_ALARMA 60000
+#define TMP_DELAY_NORMA_BLUETOOTH 5000
 #define TMP_TIMEOUT_CAIDA_LIBRE 500
 
 // ------------------------------------------------
@@ -180,7 +181,7 @@ unsigned long tiempo_actual;
 unsigned long tiempo_delay_boton;
 unsigned long tiempo_inicio_alarma;
 unsigned long tiempo_inicio_caida;
-
+unsigned long tiempo_delay_bluetooth;
 bool verificar_tiempo_alarma;
 
 int nota_actual;
@@ -365,6 +366,14 @@ void verificar_estado_sensor_accelerometro()
     float mapped_accel_z = mapf(accel_z, MIN_SENSOR_ACELEROMETRO, MAX_SENSOR_ACELEROMETRO, MIN_ESCALA_ACELEROMETRO_G, MAX_ESCALA_ACELEROMETRO_G);
 
     float norma_accel = sqrt((pow(mapped_accel_x, 2) + pow(mapped_accel_y, 2) + pow(mapped_accel_z, 2)));
+
+    if(tiempo_actual - tiempo_delay_bluetooth > TMP_DELAY_NORMA_BLUETOOTH) {
+      char norma_string[8];
+      sprintf(norma_string, "%d\n\0", norma_accel);
+      tiempo_delay_bluetooth = tiempo_actual;
+
+      bluetooth.write(norma_string);
+    }
 
     if (!verificar_caida && norma_accel > UMBRAL_CAIDA_MIN && norma_accel < UMBRAL_CAIDA_MAX)
     {
