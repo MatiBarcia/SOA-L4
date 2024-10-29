@@ -13,6 +13,7 @@ void sonar_alerta();
 void activar_alarma();
 void prender_led_color();
 float mapf(float x, float in_min, float in_max, float out_min, float out_max);
+#define TMP_DELAY_NORMA_BLUETOOTH 5000
 void verificar_estado_bluetooth();
 // Fin borrar para wokwi
 
@@ -63,9 +64,9 @@ void log_float(double val)
 // ------------------------------------------------
 // Constantes
 // ------------------------------------------------
-#define UMBRAL_CAIDA_MIN 0
+#define UMBRAL_CAIDA_MIN 0.2
 #define UMBRAL_CAIDA_MAX 1
-#define UMBRAL_PICO_NORMA_CAIDA 3
+#define UMBRAL_PICO_NORMA_CAIDA 12.5
 #define MIN_SENSOR_ACELEROMETRO 0
 #define MAX_SENSOR_ACELEROMETRO 4096
 #define MIN_ESCALA_ACELEROMETRO_G 0
@@ -73,11 +74,10 @@ void log_float(double val)
 // ------------------------------------------------
 // TEMPORIZADORES
 // ------------------------------------------------
-#define TMP_DELAY_EVENTOS 50
+#define TMP_DELAY_EVENTOS 0
 #define TMP_DELAY_BOTON_MILI 50
 #define TMP_TIMEOUT_ALARMA 60000
-#define TMP_DELAY_NORMA_BLUETOOTH 5000
-#define TMP_TIMEOUT_CAIDA_LIBRE 500
+#define TMP_TIMEOUT_CAIDA_LIBRE 2000
 
 // ------------------------------------------------
 // Pines sensores (A = analÃ³gico | D = Digital)
@@ -181,7 +181,6 @@ unsigned long tiempo_actual;
 unsigned long tiempo_delay_boton;
 unsigned long tiempo_inicio_alarma;
 unsigned long tiempo_inicio_caida;
-unsigned long tiempo_delay_bluetooth;
 bool verificar_tiempo_alarma;
 
 int nota_actual;
@@ -233,6 +232,7 @@ void fsm()
     switch (estado_actual)
     {
     case ESTADO_EMBEBIDO_REPOSO:
+        // log("Estado reposo");
         switch (evento)
         {
         case EVENTO_BOTON:
@@ -253,6 +253,7 @@ void fsm()
         }
         break;
     case ESTADO_EMBEBIDO_CAIDA:
+        // log("Estado caida");
         switch (evento)
         {
         case EVENTO_BOTON:
@@ -276,6 +277,7 @@ void fsm()
         }
         break;
     case ESTADO_EMBEBIDO_ALERTA_SONANDO:
+        // log("Estado alerta");
         switch (evento)
         {
         case EVENTO_BOTON:
@@ -295,9 +297,11 @@ void fsm()
         }
         break;
     case ESTADO_EMBEBIDO_ALERTA_FINALIZADA:
+        // log("Estado alerta finalizada");
         switch (evento)
         {
         case EVENTO_VACIO:
+            bluetooth.println("Se desactivo la alarma");
             actuador_led.color = COLOR_VERDE;
             prender_led_color();
             estado_actual = ESTADO_EMBEBIDO_REPOSO;
@@ -341,6 +345,7 @@ void get_events()
     {
         if (tiempo_actual - tiempo_inicio_caida > TMP_TIMEOUT_CAIDA_LIBRE)
         {
+            Serial.println("########termina timer");
             evento = EVENTO_TIMEOUT_CAIDA;
             return;
         }
@@ -366,14 +371,13 @@ void verificar_estado_sensor_accelerometro()
     float mapped_accel_z = mapf(accel_z, MIN_SENSOR_ACELEROMETRO, MAX_SENSOR_ACELEROMETRO, MIN_ESCALA_ACELEROMETRO_G, MAX_ESCALA_ACELEROMETRO_G);
 
     float norma_accel = sqrt((pow(mapped_accel_x, 2) + pow(mapped_accel_y, 2) + pow(mapped_accel_z, 2)));
+    //Serial.print(mapped_accel_x);
+    //Serial.print(",");
+    //Serial.print(mapped_accel_y);
+    //Serial.print(",");
+    //Serial.println(mapped_accel_z);
 
-    if(tiempo_actual - tiempo_delay_bluetooth > TMP_DELAY_NORMA_BLUETOOTH) {
-      char norma_string[8];
-      sprintf(norma_string, "%d\n\0", norma_accel);
-      tiempo_delay_bluetooth = tiempo_actual;
-
-      bluetooth.write(norma_string);
-    }
+     Serial.println(norma_accel);
 
     if (!verificar_caida && norma_accel > UMBRAL_CAIDA_MIN && norma_accel < UMBRAL_CAIDA_MAX)
     {
@@ -482,6 +486,7 @@ void sonar_alerta()
 
 void iniciar_alarma()
 {
+    bluetooth.println("Se inicio la alarma");
     tiempo_inicio_alarma = tiempo_actual;
     actuador_led.color = COLOR_ROJO;
     prender_led_color();
@@ -490,6 +495,7 @@ void iniciar_alarma()
 
 void iniciar_caida()
 {
+    Serial.println("############### incia timer");
     verificar_caida = true;
     tiempo_inicio_caida = tiempo_actual;
     actuador_led.color = COLOR_AMARILLO;
