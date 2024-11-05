@@ -66,7 +66,7 @@ void log_float(double val)
 // ------------------------------------------------
 #define UMBRAL_CAIDA_MIN 0.2
 #define UMBRAL_CAIDA_MAX 1
-#define UMBRAL_PICO_NORMA_CAIDA 12.5
+#define UMBRAL_PICO_NORMA_CAIDA 17.5
 #define MIN_SENSOR_ACELEROMETRO 0
 #define MAX_SENSOR_ACELEROMETRO 4096
 #define MIN_ESCALA_ACELEROMETRO_G 0
@@ -78,6 +78,7 @@ void log_float(double val)
 #define TMP_DELAY_BOTON_MILI 50
 #define TMP_TIMEOUT_ALARMA 60000
 #define TMP_TIMEOUT_CAIDA_LIBRE 2000
+#define TMP_DELAY_NORMA_BLUETOOTH 5000
 
 // ------------------------------------------------
 // Pines sensores (A = analÃ³gico | D = Digital)
@@ -181,6 +182,7 @@ unsigned long tiempo_actual;
 unsigned long tiempo_delay_boton;
 unsigned long tiempo_inicio_alarma;
 unsigned long tiempo_inicio_caida;
+unsigned long tiempo_delay_bluetooth;
 bool verificar_tiempo_alarma;
 
 int nota_actual;
@@ -377,7 +379,15 @@ void verificar_estado_sensor_accelerometro()
     //Serial.print(",");
     //Serial.println(mapped_accel_z);
 
-     Serial.println(norma_accel);
+
+    if(tiempo_actual - tiempo_delay_bluetooth > TMP_DELAY_NORMA_BLUETOOTH) {
+      tiempo_delay_bluetooth = tiempo_actual;
+
+      bluetooth.println(norma_accel, 3);
+    }
+    Serial.println(norma_accel);
+
+    //Serial.println(norma_accel);
 
     if (!verificar_caida && norma_accel > UMBRAL_CAIDA_MIN && norma_accel < UMBRAL_CAIDA_MAX)
     {
@@ -495,7 +505,7 @@ void iniciar_alarma()
 
 void iniciar_caida()
 {
-    Serial.println("############### incia timer");
+    Serial.println("############### inicia timer");
     verificar_caida = true;
     tiempo_inicio_caida = tiempo_actual;
     actuador_led.color = COLOR_AMARILLO;
