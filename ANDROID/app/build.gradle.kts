@@ -1,14 +1,13 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
 }
 
 android {
-    namespace = "com.soa.l4.tp2"
+    namespace = "com.example.abuelitometro"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.soa.l4.tp2"
+        applicationId = "com.example.abuelitometro"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
@@ -30,19 +29,15 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
 }
 
 dependencies {
 
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
+    implementation(libs.appcompat)
     implementation(libs.material)
-    implementation(libs.androidx.activity)
-    implementation(libs.androidx.constraintlayout)
+    implementation(libs.activity)
+    implementation(libs.constraintlayout)
     testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.ext.junit)
+    androidTestImplementation(libs.espresso.core)
 }
