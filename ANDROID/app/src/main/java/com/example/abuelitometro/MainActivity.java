@@ -85,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
         connectButton = findViewById(R.id.connectButton);
         spinnerDeviceList = findViewById(R.id.deviceList);
 
-        deviceAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, new ArrayList<>());
+        deviceAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, deviceNames);
         deviceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerDeviceList.setAdapter(deviceAdapter);
 
@@ -94,16 +94,6 @@ public class MainActivity extends AppCompatActivity {
 
         requestBluetoothActivation();
     }
-
-//    // Llama a este método cuando se haga clic en el botón de búsqueda para asegurarte de que se tienen permisos antes de buscar dispositivos
-//    private void checkPermissionsAndSearchDevices() {
-//        if (btAdapter != null && btAdapter.isEnabled()) {
-//            showToast("Aprete buscar");
-//            checkPermissions();
-//        } else {
-//            showToast("Bluetooth no está habilitado");
-//        }
-//    }
 
     // Solicita al usuario activar Bluetooth si no está habilitado
     private void requestBluetoothActivation() {
@@ -121,18 +111,9 @@ public class MainActivity extends AppCompatActivity {
 
             // Agrega dispositivos ya emparejados
             for (BluetoothDevice pairedDevice : btAdapter.getBondedDevices()) {
-                deviceNames.add(pairedDevice.getName() + "\n" + pairedDevice.getAddress());
-                deviceAdapter.notifyDataSetChanged();
+                deviceNames.add(pairedDevice.getName());
             }
-            Log.d(TAG, "Dispositivos emparejados: " + deviceNames.toString());
-
-            if (deviceAdapter != null) {
-                for (int i = 0; i < deviceAdapter.getCount(); i++) {
-                    Log.d(TAG, "Elemento en Spinner (" + i + "): " + deviceAdapter.getItem(i));
-                }
-            } else {
-                Log.d(TAG, "El adaptador del Spinner es null");
-            }
+            deviceAdapter.notifyDataSetChanged();
 
             // Inicia la búsqueda de dispositivos Bluetooth
             btAdapter.startDiscovery();
