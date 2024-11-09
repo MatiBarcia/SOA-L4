@@ -14,6 +14,7 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
@@ -28,6 +29,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -44,11 +46,12 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothAdapter btAdapter;
     private BluetoothSocket btSocket;
     private BluetoothDevice btDevice;
-    //private ConnectedThread connectionBt;
-    private ArrayList<String> deviceNames = new ArrayList<>();
-    private ArrayAdapter<String> deviceAdapter;  // Adaptador para mostrar dispositivos en el Spinner
+    private OutputStream outputStream;
+    private ArrayList<String> btDeviceNames = new ArrayList<>();
+    private ArrayList<String> spinnerDeviceNames = new ArrayList<>();
+    private ArrayAdapter<String> deviceAdapter;
 
-    Button searchButton, connectButton;
+    Button searchButton, connectButton, sendLetterButton;
     Spinner spinnerDeviceList;
 
     private static final int REQUEST_BLUETOOTH_PERMISSIONS = 1;
@@ -84,13 +87,24 @@ public class MainActivity extends AppCompatActivity {
         searchButton = findViewById(R.id.searchButton);
         connectButton = findViewById(R.id.connectButton);
         spinnerDeviceList = findViewById(R.id.deviceList);
+        sendLetterButton = findViewById(R.id.sendLetterButton);
+        sendLetterButton.setVisibility(View.GONE);
 
-        deviceAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, deviceNames);
+        deviceAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, spinnerDeviceNames);
         deviceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerDeviceList.setAdapter(deviceAdapter);
 
         searchButton.setOnClickListener(v -> checkPermissionsAndSearchDevices());
-        connectButton.setOnClickListener(v -> connectToDevice());
+
+        connectButton.setOnClickListener(v -> connectionHandler());
+
+        sendLetterButton.setOnClickListener(v -> {
+            if (btSocket != null && btSocket.isConnected()) {
+                sendLetterToDevice();
+            } else {
+                showToast("No está conectado a un dispositivo.");
+            }
+        });
 
         requestBluetoothActivation();
     }
@@ -106,21 +120,22 @@ public class MainActivity extends AppCompatActivity {
     @SuppressLint("MissingPermission")
     private void searchDevices() {
         if (btAdapter != null && btAdapter.isEnabled()) {
-            deviceNames.clear();
+            spinnerDeviceNames.clear();
             deviceAdapter.notifyDataSetChanged();
 
             // Agrega dispositivos ya emparejados
             for (BluetoothDevice pairedDevice : btAdapter.getBondedDevices()) {
-                deviceNames.add(pairedDevice.getName());
+                spinnerDeviceNames.add(pairedDevice.getName());
+                btDeviceNames.add(pairedDevice.getName() + "\n" + pairedDevice.getAddress());
             }
             deviceAdapter.notifyDataSetChanged();
 
             // Inicia la búsqueda de dispositivos Bluetooth
             btAdapter.startDiscovery();
 
-            showToast("Iniciando búsqueda de nuevos dispositivos");
+            showToast("Buscando...");
 
-            // Configura un receptor para manejar los dispositivos encontrados
+            // Configura un receptor para manejar los dispositivos encontrados - No estoy seguro de que funcione
             registerReceiver(new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
@@ -131,7 +146,8 @@ public class MainActivity extends AppCompatActivity {
                         BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
                         if (device != null) {
-                            deviceNames.add(device.getName() + "\n" + device.getAddress());  // Agrega el dispositivo a la lista
+                            spinnerDeviceNames.add(device.getName());
+                            btDeviceNames.add(device.getName() + "\n" + device.getAddress());
                             deviceAdapter.notifyDataSetChanged();
                             Log.d(TAG, "Dispositivo encontrado: " + device.getName() + " [" + device.getAddress() + "]");
                         }
@@ -145,27 +161,70 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void connectionHandler() {
+        showToast("Conectando...");
+        new Thread(() -> {
+            boolean isConnected = connectToDevice();
+
+            runOnUiThread(() -> {
+                if (isConnected) {
+                    connectButton.setText("Desconectar");
+                    sendLetterButton.setVisibility(View.VISIBLE);
+                } else {
+                    connectButton.setText("Conectar");
+                }
+            });
+        }).start();
+    }
+
     // Intenta conectar al dispositivo seleccionado en el spinner
     @SuppressLint("MissingPermission")
-    private void connectToDevice() {
+    private boolean connectToDevice() {
         int selectedIndex = spinnerDeviceList.getSelectedItemPosition();
-        if (selectedIndex >= 0 && selectedIndex < deviceNames.size()) {
-            String selectedDeviceInfo = deviceNames.get(selectedIndex);
-            String deviceAddress = selectedDeviceInfo.split("\n")[1];  // Extrae la dirección MAC
-            btDevice = btAdapter.getRemoteDevice(deviceAddress);  // Obtiene el dispositivo Bluetooth
+        if (selectedIndex >= 0 && selectedIndex < spinnerDeviceNames.size()) {
+            String selectedDeviceInfo = btDeviceNames.get(selectedIndex);
+            String deviceAddress = selectedDeviceInfo.split("\n")[1];
+            Log.d(TAG, "MAC Seleccionada: " + deviceAddress);
+            btDevice = btAdapter.getRemoteDevice(deviceAddress);
+            Log.d(TAG, "Device Seleccionado: " + btDevice);
+
+            // Cancelar búsqueda si está en proceso
+            if (btAdapter.isDiscovering()) {
+                btAdapter.cancelDiscovery();
+                Log.d(TAG, "Cancelo busqueda");
+            }
 
             try {
                 btSocket = btDevice.createRfcommSocketToServiceRecord(btDevice.getUuids()[0].getUuid());
-                btSocket.connect();  // Intenta la conexión
-                showToast("Conectado a " + btDevice.getName());
+                btSocket.connect();
+                outputStream = btSocket.getOutputStream();
+                runOnUiThread(() -> showToast("Conectado"));
+                Log.d(TAG, "Conectado a la MAC: " + deviceAddress);
+                return true;
             } catch (IOException e) {
-                showToast("Error de conexión");
+                runOnUiThread(() -> showToast("Error de conexión"));
+                //showToast("Error de conexión");
+                Log.e(TAG, "No Conectado a la MAC: " + deviceAddress);
+                return false;
             }
         } else {
             showToast("Seleccione un dispositivo para conectar");
+            return false;
         }
     }
 
+    private void sendLetterToDevice() {
+        try {
+            if (outputStream == null) {
+                outputStream = btSocket.getOutputStream();
+            }
+            outputStream.write((byte) 'a');
+            outputStream.flush();
+            Log.d(TAG, "Letra enviada: " + 'a');
+        } catch (IOException e) {
+            Log.e(TAG, "Error al enviar la letra", e);
+        }
+    }
 
     private void checkPermissions() {
         // Lista de permisos requeridos en Android 12+
@@ -240,8 +299,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
-
     // Sobrescribe este método para manejar la respuesta del usuario al solicitar permisos
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
@@ -259,7 +316,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showToast(String text) {
-        Toast.makeText(this, text, Toast.LENGTH_LONG).show();
+        Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
     }
 
 
