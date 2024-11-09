@@ -20,6 +20,7 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -33,6 +34,7 @@ import androidx.core.view.WindowInsetsCompat;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -61,6 +63,10 @@ public class MainActivity extends AppCompatActivity {
     Menu menu;
     MenuItem homeMenuItem, graphMenuItem;
 
+    private InputStream inputStream;
+    private Thread receiveThread;
+    private boolean isConnected = false;  // Variable para mantener el estado de conexión
+
     private static final int REQUEST_BLUETOOTH_PERMISSIONS = 1;
 
     @Override
@@ -75,13 +81,12 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
+        // TODO Refactor de los metodos que verifican permisos
         checkBluetoothPermissions();
 
         btAdapter = BluetoothAdapter.getDefaultAdapter();
 
-        btLauncher = registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> {
+        btLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                     if (result.getResultCode() == Activity.RESULT_OK) {
                         showToast("Bluetooth activado");
                     } else {
@@ -111,9 +116,6 @@ public class MainActivity extends AppCompatActivity {
         connectButton.setOnClickListener(v -> connectionHandler());
         sendLetterButton.setOnClickListener(v -> {
             if (btSocket != null && btSocket.isConnected()) {
-
-                // TODO Revisar si es el mejor lugar para habilitar el graph item
-                graphMenuItem.setEnabled(true);
                 sendLetterToDevice();
             } else {
                 showToast("No está conectado a un dispositivo.");
@@ -139,7 +141,6 @@ public class MainActivity extends AppCompatActivity {
         requestBluetoothActivation();
     }
 
-    // Solicita al usuario activar Bluetooth si no está habilitado
     private void requestBluetoothActivation() {
         if (btAdapter != null && !btAdapter.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -191,7 +192,55 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
     private void connectionHandler() {
+        if (isConnected) {
+            showToast("Desconectando...");
+            new Thread(() -> {
+                boolean disconnected = disconnectFromDevice();
+
+                runOnUiThread(() -> {
+                    if (disconnected) {
+                        isConnected = false;
+                        connectButton.setText("Conectar");
+                        sendLetterButton.setVisibility(View.GONE);
+                        graphMenuItem.setEnabled(false);
+                    } else {
+                        showToast("Error al desconectar.");
+                    }
+                });
+            }).start();
+        } else {
+            showToast("Conectando...");
+            new Thread(() -> {
+                boolean isConnectedNow = connectToDevice();
+
+                runOnUiThread(() -> {
+                    if (isConnectedNow) {
+                        isConnected = true;
+                        connectButton.setText("Desconectar");
+                        sendLetterButton.setVisibility(View.VISIBLE);
+                        graphMenuItem.setEnabled(true);
+                    } else {
+                        connectButton.setText("Conectar");
+                        showToast("Error al conectar.");
+                    }
+                });
+            }).start();
+        }
+    }
+
+    private boolean disconnectFromDevice() {
+        try {
+            btSocket.close();
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+
+/*    private void connectionHandler() {
         showToast("Conectando...");
         new Thread(() -> {
             boolean isConnected = connectToDevice();
@@ -200,14 +249,14 @@ public class MainActivity extends AppCompatActivity {
                 if (isConnected) {
                     connectButton.setText("Desconectar");
                     sendLetterButton.setVisibility(View.VISIBLE);
+                    graphMenuItem.setEnabled(true);
                 } else {
                     connectButton.setText("Conectar");
                 }
             });
         }).start();
-    }
+    }*/
 
-    // Intenta conectar al dispositivo seleccionado en el spinner
     @SuppressLint("MissingPermission")
     private boolean connectToDevice() {
         int selectedIndex = spinnerDeviceList.getSelectedItemPosition();
@@ -228,6 +277,8 @@ public class MainActivity extends AppCompatActivity {
                 btSocket = btDevice.createRfcommSocketToServiceRecord(btDevice.getUuids()[0].getUuid());
                 btSocket.connect();
                 outputStream = btSocket.getOutputStream();
+                inputStream = btSocket.getInputStream();
+                startReceivingData();
                 runOnUiThread(() -> showToast("Conectado"));
                 Log.d(TAG, "Conectado a la MAC: " + deviceAddress);
                 return true;
@@ -254,6 +305,33 @@ public class MainActivity extends AppCompatActivity {
         } catch (IOException e) {
             Log.e(TAG, "Error al enviar la letra", e);
         }
+    }
+
+    private void startReceivingData() {
+        receiveThread = new Thread(() -> {
+            byte[] buffer = new byte[1024];
+            int bytes;
+            while (true) {
+                try {
+                    bytes = inputStream.read(buffer);
+                    if (bytes > 0) {
+                        // Por ahora solo los logueo -> Hay que enviarlos a la otra actividad.
+                        String receivedData = new String(buffer, 0, bytes);
+                        Log.d(TAG, "Datos recibidos: " + receivedData);
+                        runOnUiThread(() -> updateUIWithReceivedData(receivedData));  // Actualiza la UI
+                    }
+                } catch (IOException e) {
+                    Log.e(TAG, "Error al recibir datos", e);
+                    break;
+                }
+            }
+        });
+        receiveThread.start();
+    }
+
+    private void updateUIWithReceivedData(String data) {
+        TextView receivedDataTextView = findViewById(R.id.receivedDataTextView);
+        receivedDataTextView.setText(data);
     }
 
     private void checkPermissions() {
@@ -318,7 +396,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Método para verificar si los permisos ya están concedidos
     private boolean hasBluetoothPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             return checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED &&
@@ -329,7 +406,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Sobrescribe este método para manejar la respuesta del usuario al solicitar permisos
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -348,6 +424,5 @@ public class MainActivity extends AppCompatActivity {
     private void showToast(String text) {
         Toast.makeText(this, text, Toast.LENGTH_SHORT).show();
     }
-
 
 }
