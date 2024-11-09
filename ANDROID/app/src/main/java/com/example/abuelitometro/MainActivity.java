@@ -14,6 +14,8 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -27,6 +29,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -53,6 +57,9 @@ public class MainActivity extends AppCompatActivity {
 
     Button searchButton, connectButton, sendLetterButton;
     Spinner spinnerDeviceList;
+    BottomNavigationView bottomNavigationView;
+    Menu menu;
+    MenuItem homeMenuItem, graphMenuItem;
 
     private static final int REQUEST_BLUETOOTH_PERMISSIONS = 1;
 
@@ -83,12 +90,17 @@ public class MainActivity extends AppCompatActivity {
                 }
         );
 
-
         searchButton = findViewById(R.id.searchButton);
         connectButton = findViewById(R.id.connectButton);
         spinnerDeviceList = findViewById(R.id.deviceList);
         sendLetterButton = findViewById(R.id.sendLetterButton);
         sendLetterButton.setVisibility(View.GONE);
+
+        BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
+        bottomNavigationView.setSelectedItemId(R.id.nav_home);
+        menu = bottomNavigationView.getMenu();
+        graphMenuItem = menu.findItem(R.id.nav_graph);
+        graphMenuItem.setEnabled(false);
 
         deviceAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, spinnerDeviceNames);
         deviceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -97,13 +109,31 @@ public class MainActivity extends AppCompatActivity {
         searchButton.setOnClickListener(v -> checkPermissionsAndSearchDevices());
 
         connectButton.setOnClickListener(v -> connectionHandler());
-
         sendLetterButton.setOnClickListener(v -> {
             if (btSocket != null && btSocket.isConnected()) {
+
+                // TODO Revisar si es el mejor lugar para habilitar el graph item
+                graphMenuItem.setEnabled(true);
                 sendLetterToDevice();
             } else {
                 showToast("No está conectado a un dispositivo.");
             }
+        });
+
+        connectButton.setOnClickListener(v -> connectionHandler());
+
+        bottomNavigationView.setOnItemSelectedListener(item -> {
+            int itemId = item.getItemId();
+            if (itemId == R.id.nav_home) {
+                // Permanecer en MainActivity
+                return true;
+            } else if (itemId == R.id.nav_graph) {
+                // Ir a SecondActivity
+                Intent intent = new Intent(MainActivity.this, SecondActivity.class);
+                startActivity(intent);
+                return true;
+            }
+            return false;
         });
 
         requestBluetoothActivation();
