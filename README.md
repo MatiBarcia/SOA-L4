@@ -22,7 +22,7 @@ Abuelitómetro es una aplicación Android diseñada para interactuar con un sist
 
 ## Instalación
 
-1. **Descargar**: Descargue la aplicación desde Google Play Store o desde el enlace proporcionado.
+1. **Descargar**: Descargue la aplicación desde el enlace proporcionado.
 2. **Instalar**: Siga las instrucciones en pantalla para instalar la aplicación.
 3. **Permisos**: Otorgue los permisos necesarios para Bluetooth y ubicación.
 
@@ -42,17 +42,6 @@ Abuelitómetro es una aplicación Android diseñada para interactuar con un sist
 
 1. **Enviar Datos**: Pulse el botón "Enviar" para enviar comandos al sistema embebido.
 2. **Visualizar Datos**: Los datos recibidos se mostrarán en la pantalla de gráficos en tiempo real.
-
-## Contribuciones
-
-Las contribuciones son bienvenidas. Por favor, siga los pasos a continuación para contribuir:
-
-1. **Fork**: Haga un fork del repositorio.
-2. **Clone**: Clone el repositorio en su máquina local.
-3. **Branch**: Cree una nueva rama para su característica o corrección (`git checkout -b feature/nueva-caracteristica`).
-4. **Commit**: Realice sus cambios y haga commit (`git commit -m 'Añadir nueva característica'`).
-5. **Push**: Haga push a la rama (`git push origin feature/nueva-caracteristica`).
-6. **Pull Request**: Cree un nuevo pull request en GitHub.
 
 ---
 
