@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "TP2"
+rootProject.name = "Abuelitometro"
 include(":app")
