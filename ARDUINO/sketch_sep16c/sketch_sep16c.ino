@@ -188,7 +188,7 @@ unsigned long tiempo_inicio_nota;
 bool alerta_sonando;
 bool verificar_caida;
 
-SoftwareSerial bluetooth(PIN_TX_BLUETOOTH,PIN_RX_BLUETOOTH);
+SoftwareSerial bluetooth(PIN_TX_BLUETOOTH, PIN_RX_BLUETOOTH);
 
 void start()
 {
@@ -357,17 +357,18 @@ void verificar_estado_sensor_accelerometro()
     int16_t accel_y;
     int16_t accel_z;
     sensor_mpu.sensor.getAcceleration(&accel_x, &accel_y, &accel_z);
-    
+
     float mapped_accel_x = mapf(accel_x, MIN_SENSOR_ACELEROMETRO, MAX_SENSOR_ACELEROMETRO, MIN_ESCALA_ACELEROMETRO_G, MAX_ESCALA_ACELEROMETRO_G);
     float mapped_accel_y = mapf(accel_y, MIN_SENSOR_ACELEROMETRO, MAX_SENSOR_ACELEROMETRO, MIN_ESCALA_ACELEROMETRO_G, MAX_ESCALA_ACELEROMETRO_G);
     float mapped_accel_z = mapf(accel_z, MIN_SENSOR_ACELEROMETRO, MAX_SENSOR_ACELEROMETRO, MIN_ESCALA_ACELEROMETRO_G, MAX_ESCALA_ACELEROMETRO_G);
 
     float norma_accel = sqrt((pow(mapped_accel_x, 2) + pow(mapped_accel_y, 2) + pow(mapped_accel_z, 2)));
 
-    if(tiempo_actual - tiempo_delay_bluetooth > TMP_DELAY_NORMA_BLUETOOTH) {
-      tiempo_delay_bluetooth = tiempo_actual;
+    if (tiempo_actual - tiempo_delay_bluetooth > TMP_DELAY_NORMA_BLUETOOTH)
+    {
+        tiempo_delay_bluetooth = tiempo_actual;
 
-      bluetooth.println(norma_accel, 3);
+        bluetooth.println(norma_accel, 3);
     }
     log(norma_accel);
 
@@ -415,10 +416,13 @@ void verificar_estado_sensor_boton()
     sensor_boton.anterior = lectura_boton;
 }
 
-void verificar_estado_bluetooth() {
-    if(bluetooth.available() > 0) {
+void verificar_estado_bluetooth()
+{
+    if (bluetooth.available() > 0)
+    {
         char c = bluetooth.read();
-        if(c == 'a') {
+        if (c == 'a')
+        {
             evento = EVENTO_BLUETOOTH;
         }
     }
