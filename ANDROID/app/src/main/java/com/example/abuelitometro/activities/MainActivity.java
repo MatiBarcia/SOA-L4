@@ -1,4 +1,4 @@
-package com.example.abuelitometro;
+package com.example.abuelitometro.activities;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -7,12 +7,15 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -20,7 +23,6 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -29,10 +31,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import com.example.abuelitometro.R;
+import com.example.abuelitometro.services.BluetoothService;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -64,9 +68,28 @@ public class MainActivity extends AppCompatActivity {
 
     private InputStream inputStream;
     private Thread receiveThread;
-    private boolean isConnected = false;  // Variable para mantener el estado de conexión
+    private boolean isConnected = false;
 
     private static final int REQUEST_BLUETOOTH_PERMISSIONS = 1;
+
+    private BluetoothService bluetoothService;
+    private boolean isBound = false;
+    private boolean isAlertActive = false;
+
+    private ServiceConnection serviceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            BluetoothService.BluetoothBinder binder = (BluetoothService.BluetoothBinder) service;
+            bluetoothService = binder.getService();
+            isBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            bluetoothService = null;
+            isBound = false;
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,6 +109,7 @@ public class MainActivity extends AppCompatActivity {
         btLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                     if (result.getResultCode() == Activity.RESULT_OK) {
                         showToast("Bluetooth activado");
+                        // TODO revisar esa llamada aca
                         searchDevices();
                     } else {
                         showToast("Bluetooth no activado");
@@ -100,7 +124,7 @@ public class MainActivity extends AppCompatActivity {
         sendLetterButton.setVisibility(View.GONE);
 
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
-        bottomNavigationView.setSelectedItemId(R.id.nav_home);
+        //bottomNavigationView.setSelectedItemId(R.id.nav_home);
         menu = bottomNavigationView.getMenu();
         graphMenuItem = menu.findItem(R.id.nav_graph);
         graphMenuItem.setEnabled(false);
@@ -113,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
 
         connectButton.setOnClickListener(v -> connectionHandler());
         sendLetterButton.setOnClickListener(v -> {
-            if (btSocket != null && btSocket.isConnected()) {
+            if (isConnected) {
                 sendLetterToDevice();
             } else {
                 showToast("No está conectado a un dispositivo.");
@@ -124,16 +148,44 @@ public class MainActivity extends AppCompatActivity {
         bottomNavigationView.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.nav_home) {
-                // Permanecer en MainActivity
                 return true;
             } else if (itemId == R.id.nav_graph) {
-                // Ir a SecondActivity
                 Intent intent = new Intent(MainActivity.this, SecondActivity.class);
+                //intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT); // Evita crear una nueva instancia
                 startActivity(intent);
                 return true;
             }
             return false;
         });
+
+        Intent serviceIntent = new Intent(this, BluetoothService.class);
+        bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+//        LocalBroadcastManager.getInstance(this).registerReceiver(dataReceiver, new IntentFilter(BluetoothService.ACTION_DATA_RECEIVED));
+        IntentFilter filter = new IntentFilter(BluetoothService.ACTION_DATA_RECEIVED);
+        LocalBroadcastManager.getInstance(this).registerReceiver(receiver, filter);
+    }
+
+    private final BroadcastReceiver receiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String data = intent.getStringExtra(BluetoothService.EXTRA_DATA);
+            Log.d(TAG, "Received data: " + data);
+            if(data.toLowerCase().contains("inicio")) {
+                sendLetterButton.setText("Desactivar Alerta de Caída");
+            } else if (data.toLowerCase().contains("desactivo")) {
+                sendLetterButton.setText("Activar Alerta de Caída");
+            }
+        }
+    };
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (isBound) {
+            unbindService(serviceConnection);
+            isBound = false;
+        }
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver);
     }
 
     private void requestBluetoothActivation() {
@@ -194,7 +246,7 @@ public class MainActivity extends AppCompatActivity {
         if (isConnected) {
             showToast("Desconectando...");
             new Thread(() -> {
-                boolean disconnected = disconnectFromDevice();
+                boolean disconnected = bluetoothService.disconnect();
 
                 runOnUiThread(() -> {
                     if (disconnected) {
@@ -227,33 +279,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private boolean disconnectFromDevice() {
-        try {
-            btSocket.close();
-            return true;
-        } catch (IOException e) {
-            return false;
-        }
-    }
-
-
-/*    private void connectionHandler() {
-        showToast("Conectando...");
-        new Thread(() -> {
-            boolean isConnected = connectToDevice();
-
-            runOnUiThread(() -> {
-                if (isConnected) {
-                    connectButton.setText("Desconectar");
-                    sendLetterButton.setVisibility(View.VISIBLE);
-                    graphMenuItem.setEnabled(true);
-                } else {
-                    connectButton.setText("Conectar");
-                }
-            });
-        }).start();
-    }*/
-
     @SuppressLint("MissingPermission")
     private boolean connectToDevice() {
         int selectedIndex = spinnerDeviceList.getSelectedItemPosition();
@@ -264,24 +289,13 @@ public class MainActivity extends AppCompatActivity {
             btDevice = btAdapter.getRemoteDevice(deviceAddress);
             Log.d(TAG, "Device Seleccionado: " + btDevice);
 
-            // Cancelar búsqueda si está en proceso
-            if (btAdapter.isDiscovering()) {
-                btAdapter.cancelDiscovery();
-                Log.d(TAG, "Cancelo busqueda");
-            }
-
-            try {
-                btSocket = btDevice.createRfcommSocketToServiceRecord(btDevice.getUuids()[0].getUuid());
-                btSocket.connect();
-                outputStream = btSocket.getOutputStream();
-                inputStream = btSocket.getInputStream();
-                startReceivingData();
+            boolean connected = bluetoothService.connect(btDevice);
+            if(connected) {
                 runOnUiThread(() -> showToast("Conectado"));
                 Log.d(TAG, "Conectado a la MAC: " + deviceAddress);
                 return true;
-            } catch (IOException e) {
+            } else {
                 runOnUiThread(() -> showToast("Error de conexión"));
-                //showToast("Error de conexión");
                 Log.e(TAG, "No Conectado a la MAC: " + deviceAddress);
                 return false;
             }
@@ -292,43 +306,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void sendLetterToDevice() {
-        try {
-            if (outputStream == null) {
-                outputStream = btSocket.getOutputStream();
-            }
-            outputStream.write((byte) 'a');
-            outputStream.flush();
-            Log.d(TAG, "Letra enviada: " + 'a');
-        } catch (IOException e) {
-            Log.e(TAG, "Error al enviar la letra", e);
+        if(!isAlertActive) {
+            bluetoothService.sendData((byte) 'a');
+            Log.d(TAG, "Alerta activada");
+            sendLetterButton.setText("Desactivar Alerta de Caída");
+            isAlertActive = true;
+        } else {
+            bluetoothService.sendData((byte) 'a');
+            Log.d(TAG, "Alerta desactivada");
+            sendLetterButton.setText("Activar Alerta de Caída");
+            isAlertActive = false;
         }
-    }
-
-    private void startReceivingData() {
-        receiveThread = new Thread(() -> {
-            byte[] buffer = new byte[1024];
-            int bytes;
-            while (true) {
-                try {
-                    bytes = inputStream.read(buffer);
-                    if (bytes > 0) {
-                        // Por ahora solo los logueo -> Hay que enviarlos a la otra actividad.
-                        String receivedData = new String(buffer, 0, bytes);
-                        Log.d(TAG, "Datos recibidos: " + receivedData);
-                        runOnUiThread(() -> updateUIWithReceivedData(receivedData));  // Actualiza la UI
-                    }
-                } catch (IOException e) {
-                    Log.e(TAG, "Error al recibir datos", e);
-                    break;
-                }
-            }
-        });
-        receiveThread.start();
-    }
-
-    private void updateUIWithReceivedData(String data) {
-        TextView receivedDataTextView = findViewById(R.id.receivedDataTextView);
-        receivedDataTextView.setText(data);
     }
 
     private void checkAndRequestPermissions() {

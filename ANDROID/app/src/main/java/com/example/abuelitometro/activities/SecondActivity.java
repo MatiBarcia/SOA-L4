@@ -1,14 +1,23 @@
-package com.example.abuelitometro;
+package com.example.abuelitometro.activities;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.TextView;
-import androidx.appcompat.app.AppCompatActivity;
+import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
+import com.example.abuelitometro.R;
+import com.example.abuelitometro.services.BluetoothService;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class SecondActivity extends AppCompatActivity implements SensorEventListener {
@@ -42,7 +51,9 @@ public class SecondActivity extends AppCompatActivity implements SensorEventList
         bottomNavigationView.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.nav_home) {
+                //bottomNavigationView.setSelectedItemId(R.id.nav_home);
                 Intent intent = new Intent(SecondActivity.this, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT); // Evita crear una nueva instancia
                 startActivity(intent);
                 return true;
             } else if (itemId == R.id.nav_graph) {
@@ -50,7 +61,23 @@ public class SecondActivity extends AppCompatActivity implements SensorEventList
             }
             return false;
         });
+
+        IntentFilter filter = new IntentFilter(BluetoothService.ACTION_DATA_RECEIVED);
+        LocalBroadcastManager.getInstance(this).registerReceiver(receiver, filter);
     }
+
+    private final BroadcastReceiver receiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (BluetoothService.ACTION_DATA_RECEIVED.equals(intent.getAction())) {
+                String receivedData = intent.getStringExtra(BluetoothService.EXTRA_DATA);
+                Log.d("SecondActivity", "Datos recibidos: " + receivedData);
+                if (!receivedData.trim().matches(".*[a-zA-Z].*")) {
+                    arduinoValue.setText(receivedData);
+                }
+            }
+        }
+    };
 
     @Override
     public void onSensorChanged(SensorEvent event) {
@@ -87,5 +114,12 @@ public class SecondActivity extends AppCompatActivity implements SensorEventList
         if (sensorManager != null) {
             sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI);
         }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        // Desregistra el receiver cuando la actividad ya no esté visible
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver);
     }
 }
