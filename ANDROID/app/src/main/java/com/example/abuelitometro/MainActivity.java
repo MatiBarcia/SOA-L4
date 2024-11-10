@@ -23,7 +23,6 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
@@ -80,14 +79,14 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        // TODO Refactor de los metodos que verifican permisos
-        checkBluetoothPermissions();
+        checkAndRequestPermissions();
 
         btAdapter = BluetoothAdapter.getDefaultAdapter();
 
         btLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                     if (result.getResultCode() == Activity.RESULT_OK) {
                         showToast("Bluetooth activado");
+                        searchDevices();
                     } else {
                         showToast("Bluetooth no activado");
                     }
@@ -110,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
         deviceAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerDeviceList.setAdapter(deviceAdapter);
 
-        searchButton.setOnClickListener(v -> checkPermissionsAndSearchDevices());
+        searchButton.setOnClickListener(v -> searchDevices());
 
         connectButton.setOnClickListener(v -> connectionHandler());
         sendLetterButton.setOnClickListener(v -> {
@@ -121,7 +120,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        connectButton.setOnClickListener(v -> connectionHandler());
 
         bottomNavigationView.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
@@ -136,8 +134,6 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
-
-        requestBluetoothActivation();
     }
 
     private void requestBluetoothActivation() {
@@ -149,46 +145,48 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("MissingPermission")
     private void searchDevices() {
-        if (btAdapter != null && btAdapter.isEnabled()) {
-            spinnerDeviceNames.clear();
-            deviceAdapter.notifyDataSetChanged();
+        if (!btAdapter.isEnabled()) {
+            requestBluetoothActivation();
+            return;
+        }
 
-            // Agrega dispositivos ya emparejados
-            for (BluetoothDevice pairedDevice : btAdapter.getBondedDevices()) {
-                spinnerDeviceNames.add(pairedDevice.getName());
-                btDeviceNames.add(pairedDevice.getName() + "\n" + pairedDevice.getAddress());
-            }
-            deviceAdapter.notifyDataSetChanged();
+        spinnerDeviceNames.clear();
+        deviceAdapter.notifyDataSetChanged();
 
-            // Inicia la búsqueda de dispositivos Bluetooth
-            btAdapter.startDiscovery();
+        // Agrega dispositivos ya emparejados
+        for (BluetoothDevice pairedDevice : btAdapter.getBondedDevices()) {
+            spinnerDeviceNames.add(pairedDevice.getName());
+            btDeviceNames.add(pairedDevice.getName() + "\n" + pairedDevice.getAddress());
+        }
+        deviceAdapter.notifyDataSetChanged();
 
-            showToast("Buscando...");
+        // Inicia la búsqueda de dispositivos Bluetooth
+        btAdapter.startDiscovery();
 
-            // Configura un receptor para manejar los dispositivos encontrados - No estoy seguro de que funcione
-            registerReceiver(new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    Log.d(TAG, "TEST");
+        showToast("Buscando...");
 
-                    String action = intent.getAction();
-                    if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                        BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+        // Configura un receptor para manejar los dispositivos encontrados - No estoy seguro de que funcione
+        registerReceiver(new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Log.d(TAG, "TEST");
 
-                        if (device != null) {
-                            spinnerDeviceNames.add(device.getName());
-                            btDeviceNames.add(device.getName() + "\n" + device.getAddress());
-                            deviceAdapter.notifyDataSetChanged();
-                            Log.d(TAG, "Dispositivo encontrado: " + device.getName() + " [" + device.getAddress() + "]");
-                        }
+                String action = intent.getAction();
+                if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
+                    if (device != null) {
+                        spinnerDeviceNames.add(device.getName());
+                        btDeviceNames.add(device.getName() + "\n" + device.getAddress());
+                        deviceAdapter.notifyDataSetChanged();
+                        Log.d(TAG, "Dispositivo encontrado: " + device.getName() + " [" + device.getAddress() + "]");
                     }
 
                 }
-            }, new IntentFilter(BluetoothDevice.ACTION_FOUND));
-        } else {
-            showToast("Bluetooth no está habilitado");
-        }
+
+            }
+        }, new IntentFilter(BluetoothDevice.ACTION_FOUND));
+
     }
 
 
@@ -333,7 +331,7 @@ public class MainActivity extends AppCompatActivity {
         receivedDataTextView.setText(data);
     }
 
-    private void checkPermissions() {
+    private void checkAndRequestPermissions() {
         // Lista de permisos requeridos en Android 12+
         List<String> permissionsNeeded = new ArrayList<>();
 
@@ -360,49 +358,6 @@ public class MainActivity extends AppCompatActivity {
         if (!permissionsNeeded.isEmpty()) {
             requestPermissions(permissionsNeeded.toArray(new String[0]), REQUEST_BLUETOOTH_PERMISSIONS);
         }
-
-        showToast("Valide permsisos");
-    }
-
-    private void checkBluetoothPermissions() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (checkSelfPermission(android.Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED ||
-                    checkSelfPermission(android.Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(new String[]{
-                        android.Manifest.permission.BLUETOOTH_CONNECT,
-                        android.Manifest.permission.BLUETOOTH_SCAN,
-                        android.Manifest.permission.ACCESS_FINE_LOCATION
-                }, 1);
-            }
-        } else {
-            if (checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 1);
-            }
-        }
-    }
-
-    private void checkPermissionsAndSearchDevices() {
-        if (btAdapter != null && btAdapter.isEnabled()) {
-            // Verifica si los permisos ya están concedidos
-            if (hasBluetoothPermissions()) {
-                searchDevices(); // Si ya tienes permisos, inicia la búsqueda
-            } else {
-                checkPermissions(); // Si no tienes permisos, solicita
-                showToast("no tengo permisos, solicito");
-            }
-        } else {
-            showToast("Bluetooth no está habilitado");
-        }
-    }
-
-    private boolean hasBluetoothPermissions() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            return checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED &&
-                    checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED &&
-                    checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-        } else {
-            return checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-        }
     }
 
     @Override
@@ -411,12 +366,12 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == REQUEST_BLUETOOTH_PERMISSIONS) {
             for (int result : grantResults) {
                 if (result != PackageManager.PERMISSION_GRANTED) {
-                    showToast("Permisos de Bluetooth y ubicación necesarios");
+                    showToast("La aplicación no funciona sin permisos de Bluetooth y ubicación");
+                    searchButton.setEnabled(false);
+                    connectButton.setEnabled(false);
                     return;
                 }
             }
-            // Si todos los permisos fueron otorgados, inicia la búsqueda de dispositivos
-            searchDevices();
         }
     }
 
