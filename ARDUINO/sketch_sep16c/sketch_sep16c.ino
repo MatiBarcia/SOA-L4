@@ -74,7 +74,6 @@ void log_float(double val)
 // ------------------------------------------------
 // TEMPORIZADORES
 // ------------------------------------------------
-#define TMP_DELAY_EVENTOS 0
 #define TMP_DELAY_BOTON_MILI 50
 #define TMP_TIMEOUT_ALARMA 60000
 #define TMP_TIMEOUT_CAIDA_LIBRE 2000
@@ -177,7 +176,6 @@ actuador_buzzer_t actuador_buzzer;
 sensor_boton_t sensor_boton;
 sensor_mpu_6050_t sensor_mpu;
 
-unsigned long tiempo_anterior;
 unsigned long tiempo_actual;
 unsigned long tiempo_delay_boton;
 unsigned long tiempo_inicio_alarma;
@@ -215,9 +213,6 @@ void start()
     sensor_boton.anterior = LOW;
 
     sensor_mpu.sensor.initialize(ACCEL_FS::A16G, GYRO_FS::G250DPS);
-
-    // Inicializo el temporizador
-    tiempo_anterior = millis();
 
     estado_actual = ESTADO_EMBEBIDO_REPOSO;
     prender_led_color();
@@ -353,12 +348,8 @@ void get_events()
         }
     }
 
-    if (tiempo_actual - tiempo_anterior > TMP_DELAY_EVENTOS)
-    {
-        verificar_sensor[indice]();
-        indice = ++indice % 3;
-        tiempo_anterior = tiempo_actual;
-    }
+    verificar_sensor[indice]();
+    indice = ++indice % 3;
 }
 
 void verificar_estado_sensor_accelerometro()
@@ -372,7 +363,7 @@ void verificar_estado_sensor_accelerometro()
     float mapped_accel_y = mapf(accel_y, MIN_SENSOR_ACELEROMETRO, MAX_SENSOR_ACELEROMETRO, MIN_ESCALA_ACELEROMETRO_G, MAX_ESCALA_ACELEROMETRO_G);
     float mapped_accel_z = mapf(accel_z, MIN_SENSOR_ACELEROMETRO, MAX_SENSOR_ACELEROMETRO, MIN_ESCALA_ACELEROMETRO_G, MAX_ESCALA_ACELEROMETRO_G);
 
-    float norma_accel = sqrt(pow(mapped_accel_x, 2) + pow(mapped_accel_y, 2) + pow(mapped_accel_z, 2));
+    float norma_accel = sqrt((pow(mapped_accel_x, 2) + pow(mapped_accel_y, 2) + pow(mapped_accel_z, 2)));
     //Serial.print(mapped_accel_x);
     //Serial.print(",");
     //Serial.print(mapped_accel_y);
