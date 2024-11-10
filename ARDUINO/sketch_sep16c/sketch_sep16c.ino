@@ -229,7 +229,7 @@ void fsm()
     switch (estado_actual)
     {
     case ESTADO_EMBEBIDO_REPOSO:
-        // log("Estado reposo");
+        log("Estado reposo");
         switch (evento)
         {
         case EVENTO_BOTON:
@@ -250,7 +250,7 @@ void fsm()
         }
         break;
     case ESTADO_EMBEBIDO_CAIDA:
-        // log("Estado caida");
+        log("Estado caida");
         switch (evento)
         {
         case EVENTO_BOTON:
@@ -274,7 +274,7 @@ void fsm()
         }
         break;
     case ESTADO_EMBEBIDO_ALERTA_SONANDO:
-        // log("Estado alerta");
+        log("Estado alerta");
         switch (evento)
         {
         case EVENTO_BOTON:
@@ -294,7 +294,7 @@ void fsm()
         }
         break;
     case ESTADO_EMBEBIDO_ALERTA_FINALIZADA:
-        // log("Estado alerta finalizada");
+        log("Estado alerta finalizada");
         switch (evento)
         {
         case EVENTO_VACIO:
@@ -342,7 +342,6 @@ void get_events()
     {
         if (tiempo_actual - tiempo_inicio_caida > TMP_TIMEOUT_CAIDA_LIBRE)
         {
-            Serial.println("########termina timer");
             evento = EVENTO_TIMEOUT_CAIDA;
             return;
         }
@@ -364,21 +363,13 @@ void verificar_estado_sensor_accelerometro()
     float mapped_accel_z = mapf(accel_z, MIN_SENSOR_ACELEROMETRO, MAX_SENSOR_ACELEROMETRO, MIN_ESCALA_ACELEROMETRO_G, MAX_ESCALA_ACELEROMETRO_G);
 
     float norma_accel = sqrt((pow(mapped_accel_x, 2) + pow(mapped_accel_y, 2) + pow(mapped_accel_z, 2)));
-    //Serial.print(mapped_accel_x);
-    //Serial.print(",");
-    //Serial.print(mapped_accel_y);
-    //Serial.print(",");
-    //Serial.println(mapped_accel_z);
-
 
     if(tiempo_actual - tiempo_delay_bluetooth > TMP_DELAY_NORMA_BLUETOOTH) {
       tiempo_delay_bluetooth = tiempo_actual;
 
       bluetooth.println(norma_accel, 3);
     }
-    Serial.println(norma_accel);
-
-    //Serial.println(norma_accel);
+    log(norma_accel);
 
     if (!verificar_caida && norma_accel > UMBRAL_CAIDA_MIN && norma_accel < UMBRAL_CAIDA_MAX)
     {
@@ -496,7 +487,6 @@ void iniciar_alarma()
 
 void iniciar_caida()
 {
-    Serial.println("############### inicia timer");
     verificar_caida = true;
     tiempo_inicio_caida = tiempo_actual;
     actuador_led.color = COLOR_AMARILLO;
