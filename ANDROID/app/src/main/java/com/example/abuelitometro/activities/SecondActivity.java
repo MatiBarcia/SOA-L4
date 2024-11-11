@@ -51,7 +51,6 @@ public class SecondActivity extends AppCompatActivity implements SensorEventList
         bottomNavigationView.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.nav_home) {
-                //bottomNavigationView.setSelectedItemId(R.id.nav_home);
                 Intent intent = new Intent(SecondActivity.this, MainActivity.class);
                 intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT); // Evita crear una nueva instancia
                 startActivity(intent);
