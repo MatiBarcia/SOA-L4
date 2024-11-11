@@ -80,7 +80,7 @@ void log_float(double val)
 #define TMP_DELAY_NORMA_BLUETOOTH 5000
 
 // ------------------------------------------------
-// Pines sensores (A = analÃ³gico | D = Digital)
+// Pines sensores (A = analogico | D = Digital)
 // ------------------------------------------------
 #define PIN_D_SENSOR_BOTON 2
 
@@ -456,21 +456,21 @@ void sonar_alerta()
     unsigned long ahora = millis();
     if (nota_actual < sizeof(duraciones) / sizeof(int))
     {
-        int duracion = 1000 / duraciones[nota_actual] * 0.5; // Calcula la duraciÃ³n de la nota
+        int duracion = 1000 / duraciones[nota_actual] * 0.5; // Calcula la duracion de la nota
 
         if (!alerta_sonando)
         {
-            tone(actuador_buzzer.pin, melodia[nota_actual], duracion); // Inicia la nueva nota con duraciÃ³n
+            tone(actuador_buzzer.pin, melodia[nota_actual], duracion); // Inicia la nueva nota con duracion
             tiempo_inicio_nota = ahora;                                // Almacena el tiempo de inicio de la nota
-            alerta_sonando = true;                                     // Indica que una nota estÃ¡ en reproducciÃ³n
+            alerta_sonando = true;                                     // Indica que una nota esta en reproduccion
         }
         else
         {
             if (ahora - tiempo_inicio_nota >= duracion)
-            {                                // Si ha pasado el tiempo de duraciÃ³n de la nota
-                noTone(actuador_buzzer.pin); // DetÃ©n el tono actual
+            {                                // Si ha pasado el tiempo de duracion de la nota
+                noTone(actuador_buzzer.pin); // Detiene el tono actual
                 nota_actual++;               // Avanza a la siguiente nota
-                alerta_sonando = false;      // Indica que la nota terminÃ³
+                alerta_sonando = false;      // Indica que la nota termino
             }
         }
     }
