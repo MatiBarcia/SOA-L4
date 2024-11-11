@@ -109,7 +109,6 @@ public class MainActivity extends AppCompatActivity {
         btLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
                     if (result.getResultCode() == Activity.RESULT_OK) {
                         showToast("Bluetooth activado");
-                        // TODO revisar esa llamada aca
                         searchDevices();
                     } else {
                         showToast("Bluetooth no activado");
@@ -124,7 +123,6 @@ public class MainActivity extends AppCompatActivity {
         sendLetterButton.setVisibility(View.GONE);
 
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
-        //bottomNavigationView.setSelectedItemId(R.id.nav_home);
         menu = bottomNavigationView.getMenu();
         graphMenuItem = menu.findItem(R.id.nav_graph);
         graphMenuItem.setEnabled(false);
@@ -151,7 +149,6 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             } else if (itemId == R.id.nav_graph) {
                 Intent intent = new Intent(MainActivity.this, SecondActivity.class);
-                //intent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT); // Evita crear una nueva instancia
                 startActivity(intent);
                 return true;
             }
@@ -160,7 +157,6 @@ public class MainActivity extends AppCompatActivity {
 
         Intent serviceIntent = new Intent(this, BluetoothService.class);
         bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
-//        LocalBroadcastManager.getInstance(this).registerReceiver(dataReceiver, new IntentFilter(BluetoothService.ACTION_DATA_RECEIVED));
         IntentFilter filter = new IntentFilter(BluetoothService.ACTION_DATA_RECEIVED);
         LocalBroadcastManager.getInstance(this).registerReceiver(receiver, filter);
     }
@@ -217,7 +213,7 @@ public class MainActivity extends AppCompatActivity {
 
         showToast("Buscando...");
 
-        // Configura un receptor para manejar los dispositivos encontrados - No estoy seguro de que funcione
+        // Configura un receptor para manejar los dispositivos encontrados
         registerReceiver(new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
