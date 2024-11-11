@@ -1,4 +1,3 @@
-// BluetoothService.java
 package com.example.abuelitometro.services;
 
 import android.annotation.SuppressLint;

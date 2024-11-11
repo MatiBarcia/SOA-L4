@@ -5,7 +5,6 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -37,37 +36,25 @@ import com.example.abuelitometro.R;
 import com.example.abuelitometro.services.BluetoothService;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = "MainActivity";
-    private final UUID BT_MODULE_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
-    private static final int REQUEST_ENABLE_BT = 1;
-    private static final int REQUEST_BLUETOOTH_CONNECT_PERMISSION = 3;
-    private static final int REQUEST_FINE_LOCATION_PERMISSION = 2;
 
     private ActivityResultLauncher<Intent> btLauncher;
     private BluetoothAdapter btAdapter;
-    private BluetoothSocket btSocket;
     private BluetoothDevice btDevice;
-    private OutputStream outputStream;
     private ArrayList<String> btDeviceNames = new ArrayList<>();
     private ArrayList<String> spinnerDeviceNames = new ArrayList<>();
     private ArrayAdapter<String> deviceAdapter;
 
     Button searchButton, connectButton, sendLetterButton;
     Spinner spinnerDeviceList;
-    BottomNavigationView bottomNavigationView;
     Menu menu;
-    MenuItem homeMenuItem, graphMenuItem;
+    MenuItem graphMenuItem;
 
-    private InputStream inputStream;
-    private Thread receiveThread;
     private boolean isConnected = false;
 
     private static final int REQUEST_BLUETOOTH_PERMISSIONS = 1;
